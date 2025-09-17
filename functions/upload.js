@@ -1,39 +1,47 @@
-const { v2: cloudinary } = require('cloudinary');
-const multipart = require('@stream-io/multipart');
-const FormData = require('form-data');
+const { writeFileSync, unlinkSync } = require("fs");
+const path = require("path");
+const express = require("express");
+const multer = require("multer");
+const cloudinary = require("cloudinary").v2;
+const { builder } = require("@netlify/functions");
+require("dotenv").config();
 
+const app = express();
+
+// Cloudinary config
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-exports.handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
+// Multer setup for temporary storage
+const upload = multer({ dest: "/tmp" });
 
+app.post("/upload", upload.single("file"), async (req, res) => {
   try {
-    // Parse multipart/form-data
-    const parser = multipart();
-    const { files, fields } = await parser.parse(event.body);
-    const file = files.photo;
+    const filePath = req.file.path;
+    const originalName = req.file.originalname;
 
-    const uploaded = await cloudinary.uploader.upload(file.path, {
-      folder: 'gojo-photos',
-      public_id: Date.now().toString(),
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: "gojo_uploads",
+      use_filename: true,
+      unique_filename: false
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        success: true,
-        url: uploaded.secure_url,
-        name: fields.name || 'No Name',
-        description: fields.description || 'No Description',
-      }),
-    };
+    // Delete temporary file
+    unlinkSync(filePath);
+
+    res.status(200).json({
+      message: "File uploaded successfully!",
+      url: result.secure_url,
+      originalName
+    });
   } catch (err) {
-    return { statusCode: 500, body: 'Upload failed: ' + err.message };
+    console.error(err);
+    res.status(500).json({ message: "Upload failed", error: err.message });
   }
-};
+});
+
+module.exports.handler = builder(app);
