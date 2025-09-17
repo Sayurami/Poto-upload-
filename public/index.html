@@ -10,10 +10,10 @@
 
 <h1>📸 Gojo Photo Gallery</h1>
 
-<form id="uploadForm" enctype="multipart/form-data">
+<form id="uploadForm">
   <input type="file" name="photo" accept="image/*" required />
   <input type="text" name="name" placeholder="Photo Name" required />
-  <textarea name="description" placeholder="Photo Description (support links)" rows="2" required></textarea>
+  <textarea name="description" placeholder="Photo Description" rows="2" required></textarea>
   <button type="submit">Upload</button>
 </form>
 
@@ -24,21 +24,20 @@ const form = document.getElementById('uploadForm');
 const gallery = document.getElementById('gallery');
 
 function linkify(text) {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  return text.replace(urlRegex, url => `<a href="${url}" target="_blank">${url}</a>`);
+  return text.replace(/(https?:\/\/[^\s]+)/g, url => `<a href="${url}" target="_blank">${url}</a>`);
 }
 
 async function loadGallery() {
-  const res = await fetch('/.netlify/functions/upload/uploads');
-  const items = await res.json();
+  // List photos from Cloudinary
+  const res = await fetch(`https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/list/gojo-photos.json`);
+  const data = await res.json();
   gallery.innerHTML = '';
-  items.forEach(item => {
+  data.resources.forEach(item => {
     const div = document.createElement('div');
     div.className = 'gallery-item';
     div.innerHTML = `
       <img src="${item.url}" onclick="window.open('${item.url}', '_blank')" />
-      <h3>${item.name}</h3>
-      <p>${linkify(item.description)}</p>
+      <h3>${item.public_id}</h3>
     `;
     gallery.appendChild(div);
   });
@@ -47,11 +46,15 @@ async function loadGallery() {
 form.addEventListener('submit', async e => {
   e.preventDefault();
   const formData = new FormData(form);
-  const response = await fetch('/.netlify/functions/upload', { method: 'POST', body: formData });
-  const data = await response.json();
+  const res = await fetch('/.netlify/functions/upload', {
+    method: 'POST',
+    body: formData
+  });
+  const data = await res.json();
   if (data.success) {
-    await loadGallery();
+    alert('Upload successful!');
     form.reset();
+    loadGallery();
   } else {
     alert('Upload failed');
   }
