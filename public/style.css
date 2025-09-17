@@ -4,4 +4,4 @@ form { margin: 20px auto; display: flex; flex-direction: column; align-items: ce
 .gallery { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 20px; }
 .gallery-item { width: 200px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; background: #fff; }
 .gallery-item img { width: 100%; height: 150px; object-fit: cover; border-radius: 8px; cursor: pointer; }
-.gallery-item h3, .gallery-item p { margin: 5px 0; word-break: break-word; }
+.gallery-item h3 { margin: 5px 0; word-break: break-word; }
