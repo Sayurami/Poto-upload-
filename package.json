@@ -1,7 +1,7 @@
 {
   "name": "gojo-pair-web",
   "version": "1.0.0",
-  "description": "Gojo MD style photo upload web app with Mega + Cloudinary",
+  "description": "Gojo MD style photo upload web app with Cloudinary",
   "main": "functions/upload.js",
   "scripts": {
     "start": "netlify dev",
@@ -15,7 +15,7 @@
     "express": "^4.18.2",
     "multer": "^1.4.5-lts.1",
     "cloudinary": "^1.39.0",
-    "@netlify/functions": "^3.2.1",
+    "@netlify/functions": "^1.4.0",
     "dotenv": "^16.3.1",
     "megajs": "^1.2.0"
   }
