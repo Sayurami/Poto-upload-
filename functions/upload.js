@@ -1,5 +1,4 @@
-const { writeFileSync, unlinkSync } = require("fs");
-const path = require("path");
+const { unlinkSync } = require("fs");
 const express = require("express");
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
@@ -8,40 +7,52 @@ require("dotenv").config();
 
 const app = express();
 
-// Cloudinary config
+// Cloudinary configuration
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 // Multer setup for temporary storage
 const upload = multer({ dest: "/tmp" });
 
 app.post("/upload", upload.single("file"), async (req, res) => {
-  try {
-    const filePath = req.file.path;
-    const originalName = req.file.originalname;
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
 
-    // Upload to Cloudinary
+  const filePath = req.file.path;
+  const originalName = req.file.originalname;
+
+  try {
+    // Upload file to Cloudinary
     const result = await cloudinary.uploader.upload(filePath, {
       folder: "gojo_uploads",
       use_filename: true,
-      unique_filename: false
+      unique_filename: false,
     });
 
-    // Delete temporary file
+    // Remove temporary file
     unlinkSync(filePath);
 
     res.status(200).json({
       message: "File uploaded successfully!",
       url: result.secure_url,
-      originalName
+      originalName,
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Upload failed", error: err.message });
+  } catch (error) {
+    // Remove temporary file even if upload fails
+    try {
+      unlinkSync(filePath);
+    } catch (err) {
+      console.error("Failed to delete temp file:", err);
+    }
+
+    console.error("Upload error:", error);
+    res.status(500).json({ message: "Upload failed", error: error.message });
   }
 });
 
+// Export Netlify function
 module.exports.handler = builder(app);
